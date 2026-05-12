@@ -224,17 +224,6 @@ export default function Home() {
             >
               🎓 Student
             </button>
-            <button
-              type="button"
-              onClick={() => setMode('faculty')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                mode === 'faculty'
-                  ? 'bg-[#c4795a] text-white'
-                  : 'bg-[#f0ebe4] text-[#8a7968]'
-              }`}
-            >
-              🔍 Faculty
-            </button>
           </div>
         </div>
       </div>
@@ -262,8 +251,8 @@ export default function Home() {
                   Turn any lecture into your study guide ☕
                 </h2>
                 <p className="text-lg text-[#8a7968] mt-3 max-w-xl mx-auto text-center">
-                  Paste a YouTube lecture URL. Get a smart outline, summaries, flashcards, and instant answers — in 12
-                  languages.
+                  Drop in any YouTube lecture. Walk away with a full outline, summaries at every depth, flashcards, and
+                  instant answers to any question — in 12 languages.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3 mt-6">
                   <span className="px-4 py-2 rounded-full text-sm font-medium bg-[#eef3f0] text-[#5c7a6b]">
@@ -403,7 +392,7 @@ export default function Home() {
                       : 'bg-[#f0ebe4] text-[#8a7968] hover:bg-[#e8e0d5]'
                   }`}
                 >
-                  {translating && selectedLanguage === lang.code ? '...' : lang.label}
+                  {translating && selectedLanguage === lang.code ? '⏳ Translating...' : lang.label}
                 </button>
               ))}
             </div>
@@ -554,15 +543,6 @@ export default function Home() {
                       Reset
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShuffled(!shuffled)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                      shuffled ? 'bg-[#5c7a6b] text-white' : 'bg-[#f0ebe4] text-[#8a7968]'
-                    }`}
-                  >
-                    🔀 Shuffle {shuffled ? 'On' : 'Off'}
-                  </button>
                 </div>
 
                 {(() => {
@@ -675,15 +655,24 @@ export default function Home() {
                                 return (
                                   <div
                                     key={idx}
-                                    className={`rounded-2xl border border-[#e8e0d5] bg-white shadow-sm ${
-                                      isMastered ? 'opacity-40' : ''
+                                    className={`rounded-2xl border shadow-sm transition-all ${
+                                      isMastered
+                                        ? 'border-[#5c7a6b] bg-[#f0f7f4] opacity-70'
+                                        : 'border-[#e8e0d5] bg-white'
                                     }`}
                                     style={{ perspective: '1000px' }}
                                   >
                                     <div
                                       role="presentation"
                                       onClick={() => {
-                                        if (!isFlipped) {
+                                        if (isMastered) return;
+                                        if (isFlipped) {
+                                          setCardStatus((prev: any) => {
+                                            const next = { ...prev };
+                                            delete next[idx];
+                                            return next;
+                                          });
+                                        } else {
                                           setCardStatus((prev: any) => ({ ...prev, [idx]: 'flipped' }));
                                         }
                                       }}
@@ -693,7 +682,7 @@ export default function Home() {
                                         transformStyle: 'preserve-3d',
                                         transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                                         position: 'relative',
-                                        minHeight: '180px',
+                                        minHeight: '220px',
                                       }}
                                     >
                                       <div
@@ -743,16 +732,6 @@ export default function Home() {
                                               className="flex-1 rounded-lg bg-[#5c7a6b] py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4a6b5a]"
                                             >
                                               ✅ Got it
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={e => {
-                                                e.stopPropagation();
-                                                setCardStatus((prev: any) => ({ ...prev, [idx]: 'review' }));
-                                              }}
-                                              className="flex-1 rounded-lg bg-[#f0ebe4] py-1.5 text-xs font-medium text-[#8a7968] transition-colors hover:bg-[#e8e0d5]"
-                                            >
-                                              🔄 Review again
                                             </button>
                                           </div>
                                         )}
