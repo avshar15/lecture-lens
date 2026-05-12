@@ -47,7 +47,7 @@ export async function runFacultyAuditAgent(
     .join('\n');
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5',
     max_tokens: 4000,
     messages: [
       {
@@ -102,7 +102,7 @@ export async function runCurriculumMapAgent(
     .join('\n\n');
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5',
     max_tokens: 4000,
     messages: [
       {
