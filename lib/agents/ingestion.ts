@@ -51,7 +51,7 @@ export async function runIngestionAgent(url: string): Promise<{
     throw new Error('This video has no transcript available.');
   }
 
-  // Chunk transcript into ~30 second segments
+  // Chunk transcript into ~15 second segments for precise timestamps
   const chunks: TranscriptChunk[] = [];
   let currentText = '';
   let chunkStart = rawTranscript[0].offset / 1000;
@@ -60,7 +60,7 @@ export async function runIngestionAgent(url: string): Promise<{
     currentText += ' ' + item.text;
     const currentTime = item.offset / 1000;
 
-    if (currentTime - chunkStart >= 30) {
+    if (currentTime - chunkStart >= 15) {
       chunks.push({
         text: currentText.trim(),
         timestamp: chunkStart,

@@ -3,11 +3,18 @@
 import { useState } from 'react';
 
 const LANGUAGES = [
+  { code: 'English', label: '🇺🇸 English' },
   { code: 'Spanish', label: '🇪🇸 Spanish' },
   { code: 'French', label: '🇫🇷 French' },
+  { code: 'German', label: '🇩🇪 German' },
+  { code: 'Italian', label: '🇮🇹 Italian' },
+  { code: 'Portuguese', label: '🇵🇹 Portuguese' },
   { code: 'Hindi', label: '🇮🇳 Hindi' },
   { code: 'Mandarin', label: '🇨🇳 Mandarin' },
+  { code: 'Japanese', label: '🇯🇵 Japanese' },
+  { code: 'Korean', label: '🇰🇷 Korean' },
   { code: 'Arabic', label: '🇸🇦 Arabic' },
+  { code: 'Russian', label: '🇷🇺 Russian' },
 ];
 
 const AGENT_STEPS = [
@@ -39,6 +46,11 @@ export default function Home() {
     setLoading(true);
     setError('');
     setResult(null);
+    setSelectedLanguage('');
+    setSearchResults([]);
+    setCardStatus({});
+    setFlippedCards(new Set());
+    setActiveTab('outline');
     setCurrentStep(1);
 
     try {
@@ -70,6 +82,7 @@ export default function Home() {
   const handleSearch = async () => {
     if (!searchQuery.trim() || !result?.chunks) return;
     setSearching(true);
+    setSearchResults([]);
     try {
       const response = await fetch('/api/search', {
         method: 'POST',
@@ -77,7 +90,7 @@ export default function Home() {
         body: JSON.stringify({ query: searchQuery, chunks: result.chunks }),
       });
       const data = await response.json();
-      if (data.success) setSearchResults(data.results);
+      if (data.success) setSearchResults(data as any);
     } catch {
       console.error('Search failed');
     } finally {
@@ -87,29 +100,63 @@ export default function Home() {
 
   const handleTranslate = async (language: string) => {
     if (!result || !language) return;
+    if (language === selectedLanguage) return;
+    if (language === 'English' && !selectedLanguage) return;
+
+    if (language === 'English') {
+      setResult((prev: any) => ({
+        ...prev,
+        analysis: {
+          ...prev.analysis,
+          outline: prev.originalAnalysis?.outline || prev.analysis.outline,
+          flashcards: prev.originalAnalysis?.flashcards || prev.analysis.flashcards,
+          summaryShort: prev.originalAnalysis?.summaryShort || prev.analysis.summaryShort,
+          summaryMedium: prev.originalAnalysis?.summaryMedium || prev.analysis.summaryMedium,
+          summaryFull: prev.originalAnalysis?.summaryFull || prev.analysis.summaryFull,
+        },
+      }));
+      setSelectedLanguage('');
+      return;
+    }
+
     setTranslating(true);
     setSelectedLanguage(language);
     try {
+      const sourceContent = result.originalAnalysis || result.analysis;
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: {
-            outline: result.analysis.outline,
-            flashcards: result.analysis.flashcards,
-            summaryShort: result.analysis.summaryShort,
-            summaryMedium: result.analysis.summaryMedium,
-            summaryFull: result.analysis.summaryFull,
+            outline: sourceContent.outline,
+            flashcards: sourceContent.flashcards,
+            summaryShort: sourceContent.summaryShort,
+            summaryMedium: sourceContent.summaryMedium,
+            summaryFull: sourceContent.summaryFull,
           },
           targetLanguage: language,
         }),
       });
       const data = await response.json();
       if (data.success) {
-        setResult((prev: any) => ({
-          ...prev,
-          analysis: { ...prev.analysis, ...data.translated },
-        }));
+        if (!result.originalAnalysis) {
+          setResult((prev: any) => ({
+            ...prev,
+            originalAnalysis: {
+              outline: prev.analysis.outline,
+              flashcards: prev.analysis.flashcards,
+              summaryShort: prev.analysis.summaryShort,
+              summaryMedium: prev.analysis.summaryMedium,
+              summaryFull: prev.analysis.summaryFull,
+            },
+            analysis: { ...prev.analysis, ...data.translated },
+          }));
+        } else {
+          setResult((prev: any) => ({
+            ...prev,
+            analysis: { ...prev.analysis, ...data.translated },
+          }));
+        }
       }
     } catch {
       console.error('Translation failed');
@@ -184,6 +231,27 @@ export default function Home() {
         )}
 
         {/* URL Input */}
+        {result && (
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-400 truncate flex-1 mr-4">
+              Analyzing: <span className="text-white font-mono text-xs">{url}</span>
+            </p>
+            <button
+              onClick={() => {
+                setResult(null);
+                setUrl('');
+                setSearchResults([]);
+                setSelectedLanguage('');
+                setCardStatus({});
+                setFlippedCards(new Set());
+                setActiveTab('outline');
+              }}
+              className="shrink-0 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-all"
+            >
+              ← Analyze another lecture
+            </button>
+          </div>
+        )}
         <div className="flex gap-3 mb-8">
           <input
             type="text"
@@ -244,14 +312,14 @@ export default function Home() {
           <div>
             {/* Language Toggle */}
             <div className="flex items-center gap-2 mb-6 flex-wrap">
-              <span className="text-sm text-gray-400">Translate to:</span>
+              <span className="text-sm text-gray-400">Language:</span>
               {LANGUAGES.map(lang => (
                 <button
                   key={lang.code}
                   onClick={() => handleTranslate(lang.code)}
                   disabled={translating}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                    selectedLanguage === lang.code
+                    (lang.code === 'English' && !selectedLanguage) || selectedLanguage === lang.code
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                   }`}
@@ -566,32 +634,59 @@ export default function Home() {
                   />
                   <button
                     onClick={handleSearch}
-                    disabled={searching}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 rounded-xl font-medium transition-all"
+                    disabled={searching || !searchQuery.trim()}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-xl font-medium transition-all"
                   >
-                    {searching ? 'Searching...' : 'Search'}
+                    {searching ? 'Searching...' : 'Ask'}
                   </button>
                 </div>
-                {searchResults.length > 0 && (
-                  <div className="space-y-3">
-                    {searchResults.map((r: any, i: number) => (
-                      <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                        <p className="text-gray-300 text-sm mb-3">{r.text}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
-                            Relevance: {(r.relevanceScore * 100).toFixed(0)}%
-                          </span>
-                          <a
-                            href={getYouTubeTimestampUrl(result.metadata.videoId, r.timestamp)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-mono bg-gray-800 hover:bg-blue-600 px-2 py-1 rounded transition-all"
-                          >
-                            ▶ {r.timestampFormatted}
-                          </a>
+                {searching && (
+                  <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 animate-pulse">
+                    <p className="text-gray-500 text-sm">Finding the answer in the lecture...</p>
+                  </div>
+                )}
+                {!searching && searchResults && (searchResults as any).answer && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-900/20 border border-blue-800 rounded-xl p-5">
+                      <p className="text-xs text-blue-400 font-medium mb-2">ANSWER</p>
+                      <p className="text-white leading-relaxed mb-4">{(searchResults as any).answer}</p>
+                      {((searchResults as any).sources || [])[0] && (
+                        <a
+                          href={getYouTubeTimestampUrl(
+                            result.metadata.videoId,
+                            ((searchResults as any).sources || [])[0].timestamp
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                        >
+                          ▶ Watch at {((searchResults as any).sources || [])[0].timestampFormatted}
+                        </a>
+                      )}
+                    </div>
+                    {((searchResults as any).sources || []).length > 1 && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2 font-medium">OTHER RELEVANT MOMENTS</p>
+                        <div className="space-y-2">
+                          {((searchResults as any).sources || []).slice(1).map((r: any, i: number) => (
+                            <div
+                              key={i}
+                              className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-start justify-between gap-4"
+                            >
+                              <p className="text-gray-400 text-sm flex-1 line-clamp-2">{r.text}</p>
+                              <a
+                                href={getYouTubeTimestampUrl(result.metadata.videoId, r.timestamp)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 text-xs font-mono bg-gray-800 hover:bg-blue-600 px-2 py-1 rounded transition-all"
+                              >
+                                ▶ {r.timestampFormatted}
+                              </a>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>
