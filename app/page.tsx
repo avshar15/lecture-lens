@@ -665,7 +665,6 @@ export default function Home() {
                                     <div
                                       role="presentation"
                                       onClick={() => {
-                                        if (isMastered) return;
                                         if (isFlipped) {
                                           setCardStatus((prev: any) => {
                                             const next = { ...prev };
@@ -697,7 +696,24 @@ export default function Home() {
                                       >
                                         <p className="mb-2 text-xs font-medium text-[#c4795a]">QUESTION</p>
                                         <p className="font-medium text-[#2d2520]">{card.question}</p>
-                                        <p className="mt-3 text-xs text-[#b5a898]">Click to reveal</p>
+                                        {isMastered ? (
+                                          <button
+                                            type="button"
+                                            onClick={e => {
+                                              e.stopPropagation();
+                                              setCardStatus((prev: any) => {
+                                                const next = { ...prev };
+                                                delete next[idx];
+                                                return next;
+                                              });
+                                            }}
+                                            className="mt-3 rounded-full bg-[#fdf0eb] px-4 py-1 text-xs font-medium text-[#c4795a] transition-colors hover:bg-[#c4795a] hover:text-white"
+                                          >
+                                            🔄 Review again
+                                          </button>
+                                        ) : (
+                                          <p className="mt-3 text-xs text-[#b5a898]">Click to reveal</p>
+                                        )}
                                       </div>
                                       <div
                                         className="rounded-2xl"
@@ -722,14 +738,14 @@ export default function Home() {
                                           ▶ {card.timestampFormatted}
                                         </a>
                                         {!isMastered && (
-                                          <div className="mt-3 flex gap-2">
+                                          <div className="mt-3">
                                             <button
                                               type="button"
                                               onClick={e => {
                                                 e.stopPropagation();
                                                 setCardStatus((prev: any) => ({ ...prev, [idx]: 'got-it' }));
                                               }}
-                                              className="flex-1 rounded-lg bg-[#5c7a6b] py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4a6b5a]"
+                                              className="rounded-full bg-[#5c7a6b] px-4 py-1 text-xs font-medium text-white transition-colors hover:bg-[#4a6b5a]"
                                             >
                                               ✅ Got it
                                             </button>
