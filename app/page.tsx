@@ -201,38 +201,31 @@ export default function Home() {
     >
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
 
       {/* Header */}
-      <div className="border-b border-[#e8e0d5] bg-white px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#2d2520]" style={serif}>
-              lecturelens ☕
-            </h1>
-            <p className="text-xs text-[#8a7968] mt-0.5">your AI study companion</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setMode('student')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                mode === 'student'
-                  ? 'bg-[#5c7a6b] text-white'
-                  : 'bg-[#f0ebe4] text-[#8a7968]'
-              }`}
-            >
-              🎓 Student
-            </button>
-          </div>
+      <div className="border-b border-[#e8e0d5] bg-white px-6 py-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <h1 className="text-4xl font-bold text-[#2d2520]" style={serif}>
+            lecturelens ☕
+          </h1>
+          <p className="text-sm text-[#8a7968] mt-1">your AI study companion</p>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-12">
         {/* Hero — no result, not loading */}
         {!result && !loading && (
-          <div className="text-center pt-20 pb-16">
-            <div className="flex justify-center">
+          <div className="text-center pt-20 pb-16" style={{ animation: 'fadeIn 0.6s ease-out' }}>
+            <div className="flex justify-center" style={{ animation: 'float 3s ease-in-out infinite' }}>
               <svg width="140" height="90" viewBox="0 0 140 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="10" y="40" width="50" height="35" rx="3" fill="#eef3f0" stroke="#5c7a6b" strokeWidth="2" />
                 <rect x="60" y="40" width="50" height="35" rx="3" fill="#eef3f0" stroke="#5c7a6b" strokeWidth="2" />
@@ -252,7 +245,8 @@ export default function Home() {
                 </h2>
                 <p className="text-lg text-[#8a7968] mt-3 max-w-xl mx-auto text-center">
                   Drop in any YouTube lecture. Walk away with a full outline, summaries at every depth, flashcards, and
-                  instant answers to any question — in 12 languages.
+                  instant answers to any question in multiple languages. Every timestamp takes you directly to that moment
+                  in the video.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3 mt-6">
                   <span className="px-4 py-2 rounded-full text-sm font-medium bg-[#eef3f0] text-[#5c7a6b]">
@@ -272,7 +266,7 @@ export default function Home() {
                   Get private feedback on your lecture
                 </h2>
                 <p className="text-lg text-[#8a7968] mt-3 max-w-xl mx-auto text-center">
-                  Paste your lecture URL. Get a private pedagogical audit — for your eyes only.
+                  Paste your lecture URL. Get a private pedagogical audit, for your eyes only.
                 </p>
               </>
             )}
@@ -434,6 +428,7 @@ export default function Home() {
                           {item.title}
                         </h3>
                         <p className="text-sm leading-relaxed text-[#8a7968]">{item.summary}</p>
+                        <p className="mt-2 text-xs text-[#b5a898]">Click the timestamp to jump to this moment →</p>
                       </div>
                       <a
                         href={getYouTubeTimestampUrl(result.metadata.videoId, item.timestamp)}
@@ -481,7 +476,63 @@ export default function Home() {
                     <p className="leading-relaxed text-[#2d2520]">{result.analysis.summaryShort}</p>
                   )}
                   {activeSummaryTab === 'guide' && (
-                    <p className="leading-relaxed text-[#2d2520]">{result.analysis.summaryMedium}</p>
+                    <div className="leading-relaxed text-[#2d2520] space-y-3">
+                      {result.analysis.summaryMedium.split('\n').map((line: string, idx: number) => {
+                        if (line.startsWith('## '))
+                          return (
+                            <h2 key={idx} className="text-lg font-bold text-[#5c7a6b] mt-4 mb-2" style={serif}>
+                              {line.replace('## ', '')}
+                            </h2>
+                          );
+                        if (line.startsWith('### '))
+                          return (
+                            <h3 key={idx} className="font-semibold text-[#5c7a6b] mt-3 mb-1" style={serif}>
+                              {line.replace('### ', '')}
+                            </h3>
+                          );
+                        if (line.startsWith('**') && line.endsWith('**'))
+                          return (
+                            <p key={idx} className="font-semibold text-[#2d2520]">
+                              {line.replace(/\*\*/g, '')}
+                            </p>
+                          );
+                        if (line.includes('**')) {
+                          const parts = line.split(/\*\*(.*?)\*\*/g);
+                          return (
+                            <p key={idx} className="text-[#2d2520]">
+                              {parts.map((part, i) =>
+                                i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                              )}
+                            </p>
+                          );
+                        }
+                        if (line.startsWith('MOST IMPORTANT MOMENT:')) {
+                          const timestampMatch = line.match(/(\d+:\d+)/);
+                          const text = line.replace('MOST IMPORTANT MOMENT:', '').trim();
+                          return (
+                            <div key={idx} className="mt-6 rounded-xl bg-[#fdf0eb] border border-[#c4795a] p-4">
+                              <p className="text-xs font-medium text-[#c4795a] mb-1">⭐ MOST IMPORTANT MOMENT</p>
+                              <p className="text-[#2d2520] text-sm">{text.replace(/\d+:\d+\s*—\s*/, '')}</p>
+                              {timestampMatch && (
+                                <a
+                                  href={getYouTubeTimestampUrl(result.metadata.videoId, (() => {
+                                    const [m, s] = timestampMatch[1].split(':').map(Number);
+                                    return m * 60 + s;
+                                  })())}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block mt-2 rounded-full bg-[#c4795a] px-3 py-1 text-xs font-mono text-white hover:bg-[#b56b4e]"
+                                >
+                                  ▶ Watch at {timestampMatch[1]}
+                                </a>
+                              )}
+                            </div>
+                          );
+                        }
+                        if (line.trim() === '') return <div key={idx} className="mb-1" />;
+                        return <p key={idx} className="text-[#2d2520]">{line}</p>;
+                      })}
+                    </div>
                   )}
                   {activeSummaryTab === 'notes' && (
                     <div className="max-w-none leading-relaxed">
@@ -665,6 +716,7 @@ export default function Home() {
                                     <div
                                       role="presentation"
                                       onClick={() => {
+                                        if (isMastered) return;
                                         if (isFlipped) {
                                           setCardStatus((prev: any) => {
                                             const next = { ...prev };
@@ -743,9 +795,16 @@ export default function Home() {
                                               type="button"
                                               onClick={e => {
                                                 e.stopPropagation();
-                                                setCardStatus((prev: any) => ({ ...prev, [idx]: 'got-it' }));
+                                                setCardStatus((prev: any) => {
+                                                  const next = { ...prev };
+                                                  delete next[idx];
+                                                  return next;
+                                                });
+                                                setTimeout(() => {
+                                                  setCardStatus((prev: any) => ({ ...prev, [idx]: 'got-it' }));
+                                                }, 10);
                                               }}
-                                              className="rounded-full bg-[#5c7a6b] px-4 py-1 text-xs font-medium text-white transition-colors hover:bg-[#4a6b5a]"
+                                              className="rounded-full bg-[#5c7a6b] px-3 py-0.5 text-xs font-medium text-white transition-colors hover:bg-[#4a6b5a] inline-block"
                                             >
                                               ✅ Got it
                                             </button>
