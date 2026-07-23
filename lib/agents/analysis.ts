@@ -68,7 +68,7 @@ export async function runAnalysisAgent(
   // Generate outline + flashcards
   const structureResponse = await client.messages.create({
     model: 'claude-sonnet-4-5',
-    max_tokens: 4000,
+    max_tokens: 16000,
     messages: [
       {
         role: 'user',
@@ -115,6 +115,7 @@ FLASHCARD RULES — CRITICAL:
 - Every flashcard must have both a question AND an answer
 - Answer must be plain English explanation a student can understand without jargon
 - Timestamp must point to the exact moment in the transcript where the professor explained this concept
+- Timestamp must point to the exact moment where the professor BEGINS explaining this concept clearly, not just where the keyword is first mentioned
 - Spread flashcards proportionally — every outline section must have cards
 
 Return ONLY the JSON, no other text.
@@ -129,12 +130,18 @@ ${transcriptWithTimestamps}`,
     ? structureResponse.content[0].text
     : '';
 
-  let structure = { outline: [], flashcards: [] };
+  let structure: any = { outline: [], flashcards: [] };
   try {
-    const cleaned = structureText.replace(/```json|```/g, '').trim();
+    let cleaned = structureText.trim();
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+    }
     structure = JSON.parse(cleaned);
-  } catch {
-    console.error('Failed to parse structure JSON');
+  } catch (e) {
+    console.error('Failed to parse structure JSON. Raw response length:', structureText.length);
+    console.error('Last 500 chars:', structureText.slice(-500));
   }
 
   // Generate three summaries
@@ -150,9 +157,9 @@ This lecture is ${videoDurationMinutes} minutes long.
 
 Return this exact JSON structure:
 {
-  "summaryShort": "THE GIST: Exactly 200 words maximum. Pure prose, one paragraph, no headers, no bullets. Answer only: what was this lecture about and why does it matter? Be ruthlessly brief. A student reads this in 60-90 seconds.",
-  "summaryMedium": "STUDY GUIDE: Exactly ${studyGuideWords} words. Use short paragraphs with bold headers for each major topic. Cover every concept from the lecture. End with this exact format on a new line: 'MOST IMPORTANT MOMENT: [timestamp in M:SS format] — [one sentence explaining why this moment is the most important concept in the lecture]'",
-  "summaryFull": "DEEP NOTES: Exactly ${deepNotesWords} words. Structure it exactly like this:\n\n## The Big Picture\n[One paragraph — what the whole lecture was about]\n\n## Key Concepts\n[One section per major topic with bold header, detailed explanation with specific examples and analogies the professor used]\n\n## The Most Important Moment\n[timestamp in M:SS format] — [one sentence explaining why]\n\n## Exam Must-Knows\n[5-7 bullet points of the highest-yield facts a student needs to know for an exam]"
+  "summaryShort": "Maximum 200 words of pure prose in one paragraph. No headers, no bullets, no instruction text. Answer only what this lecture was about and why it matters. Be ruthlessly brief.",
+  "summaryMedium": "Approximately ${studyGuideWords} words. Do not include any instruction text or format descriptions. Use short paragraphs with bold headers for each major topic. Cover every concept from the lecture. Never use em dashes. End with a line in exactly this format: MOST IMPORTANT MOMENT: [timestamp in M:SS] - [one sentence]. The timestamp must be where the single most important concept is first clearly explained.",
+  "summaryFull": "Approximately ${deepNotesWords} words of comprehensive study notes. Do not include any instruction text or headers describing the format. Start directly with '## The Big Picture' followed by one paragraph about what the whole lecture was about. Then '## Key Concepts' with one subsection per major topic using bold headers and detailed explanations with specific examples the instructor used. Then '## The Most Important Moment' with a timestamp in M:SS format followed by a hyphen and one sentence explaining why. Then '## Exam Must-Knows' with 5-7 bullet points of the highest-yield facts. Never use em dashes, use a simple hyphen instead."
 }
 
 Return ONLY the JSON, no other text.
@@ -173,10 +180,16 @@ ${sampledTranscript}`,
     summaryFull: '',
   };
   try {
-    const cleaned = summaryText.replace(/```json|```/g, '').trim();
+    let cleaned = summaryText.trim();
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+    }
     summaries = JSON.parse(cleaned);
-  } catch {
-    console.error('Failed to parse summary JSON');
+  } catch (e) {
+    console.error('Failed to parse summary JSON. Raw response length:', summaryText.length);
+    console.error('Last 500 chars:', summaryText.slice(-500));
   }
 
   return {

@@ -2,21 +2,6 @@
 
 import { useState } from 'react';
 
-const LANGUAGES = [
-  { code: 'English', label: '🇺🇸 English' },
-  { code: 'Spanish', label: '🇪🇸 Spanish' },
-  { code: 'French', label: '🇫🇷 French' },
-  { code: 'German', label: '🇩🇪 German' },
-  { code: 'Italian', label: '🇮🇹 Italian' },
-  { code: 'Portuguese', label: '🇵🇹 Portuguese' },
-  { code: 'Hindi', label: '🇮🇳 Hindi' },
-  { code: 'Mandarin', label: '🇨🇳 Mandarin' },
-  { code: 'Japanese', label: '🇯🇵 Japanese' },
-  { code: 'Korean', label: '🇰🇷 Korean' },
-  { code: 'Arabic', label: '🇸🇦 Arabic' },
-  { code: 'Russian', label: '🇷🇺 Russian' },
-];
-
 const TAB_LABELS: Record<string, string> = {
   outline: '📋 Outline',
   summary: '📝 Summary',
@@ -38,8 +23,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('');
-  const [translating, setTranslating] = useState(false);
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
   const [mode, setMode] = useState<'student' | 'faculty'>('student');
   const [objectives, setObjectives] = useState('');
@@ -51,7 +34,6 @@ export default function Home() {
     setLoading(true);
     setError('');
     setResult(null);
-    setSelectedLanguage('');
     setSearchResults([]);
     setCardStatus({});
     setFlippedCards(new Set());
@@ -100,73 +82,6 @@ export default function Home() {
       console.error('Search failed');
     } finally {
       setSearching(false);
-    }
-  };
-
-  const handleTranslate = async (language: string) => {
-    if (!result || !language) return;
-    if (language === selectedLanguage) return;
-    if (language === 'English' && !selectedLanguage) return;
-
-    if (language === 'English') {
-      setResult((prev: any) => ({
-        ...prev,
-        analysis: {
-          ...prev.analysis,
-          outline: prev.originalAnalysis?.outline || prev.analysis.outline,
-          flashcards: prev.originalAnalysis?.flashcards || prev.analysis.flashcards,
-          summaryShort: prev.originalAnalysis?.summaryShort || prev.analysis.summaryShort,
-          summaryMedium: prev.originalAnalysis?.summaryMedium || prev.analysis.summaryMedium,
-          summaryFull: prev.originalAnalysis?.summaryFull || prev.analysis.summaryFull,
-        },
-      }));
-      setSelectedLanguage('');
-      return;
-    }
-
-    setTranslating(true);
-    setSelectedLanguage(language);
-    try {
-      const sourceContent = result.originalAnalysis || result.analysis;
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: {
-            outline: sourceContent.outline,
-            flashcards: sourceContent.flashcards,
-            summaryShort: sourceContent.summaryShort,
-            summaryMedium: sourceContent.summaryMedium,
-            summaryFull: sourceContent.summaryFull,
-          },
-          targetLanguage: language,
-        }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        if (!result.originalAnalysis) {
-          setResult((prev: any) => ({
-            ...prev,
-            originalAnalysis: {
-              outline: prev.analysis.outline,
-              flashcards: prev.analysis.flashcards,
-              summaryShort: prev.analysis.summaryShort,
-              summaryMedium: prev.analysis.summaryMedium,
-              summaryFull: prev.analysis.summaryFull,
-            },
-            analysis: { ...prev.analysis, ...data.translated },
-          }));
-        } else {
-          setResult((prev: any) => ({
-            ...prev,
-            analysis: { ...prev.analysis, ...data.translated },
-          }));
-        }
-      }
-    } catch {
-      console.error('Translation failed');
-    } finally {
-      setTranslating(false);
     }
   };
 
@@ -245,8 +160,7 @@ export default function Home() {
                 </h2>
                 <p className="text-lg text-[#8a7968] mt-3 max-w-xl mx-auto text-center">
                   Drop in any YouTube lecture. Walk away with a full outline, summaries at every depth, flashcards, and
-                  instant answers to any question in multiple languages. Every timestamp takes you directly to that moment
-                  in the video.
+                  instant answers to any question. Every timestamp takes you directly to that moment in the video.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3 mt-6">
                   <span className="px-4 py-2 rounded-full text-sm font-medium bg-[#eef3f0] text-[#5c7a6b]">
@@ -359,7 +273,6 @@ export default function Home() {
                     setResult(null);
                     setUrl('');
                     setSearchResults([]);
-                    setSelectedLanguage('');
                     setCardStatus({});
                     setFlippedCards(new Set());
                     setActiveTab('outline');
@@ -369,26 +282,6 @@ export default function Home() {
                   ← Try another lecture
                 </button>
               </div>
-            </div>
-
-            {/* Language Toggle */}
-            <div className="mb-6 flex flex-wrap items-center gap-2">
-              <span className="text-sm text-[#8a7968]">🌍</span>
-              {LANGUAGES.map(lang => (
-                <button
-                  type="button"
-                  key={lang.code}
-                  onClick={() => handleTranslate(lang.code)}
-                  disabled={translating}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                    (lang.code === 'English' && !selectedLanguage) || selectedLanguage === lang.code
-                      ? 'bg-[#5c7a6b] text-white'
-                      : 'bg-[#f0ebe4] text-[#8a7968] hover:bg-[#e8e0d5]'
-                  }`}
-                >
-                  {translating && selectedLanguage === lang.code ? '⏳ Translating...' : lang.label}
-                </button>
-              ))}
             </div>
 
             {/* Tabs */}
@@ -473,11 +366,15 @@ export default function Home() {
                 </div>
                 <div className="rounded-2xl border border-[#e8e0d5] bg-white p-6 shadow-sm">
                   {activeSummaryTab === 'gist' && (
-                    <p className="leading-relaxed text-[#2d2520]">{result.analysis.summaryShort}</p>
+                    <p className="leading-relaxed text-[#2d2520]">
+                      {result.analysis.summaryShort || 'Summary could not be generated for this video. The transcript may be too long or contain formatting that could not be processed. Try the Deep Notes tab or use the Ask tab to ask specific questions about the lecture.'}
+                    </p>
                   )}
                   {activeSummaryTab === 'guide' && (
                     <div className="leading-relaxed text-[#2d2520] space-y-3">
-                      {result.analysis.summaryMedium.split('\n').map((line: string, idx: number) => {
+                      {!result.analysis.summaryMedium ? (
+                        <p className="text-[#8a7968]">Study guide could not be generated for this video. Try the Ask tab to ask specific questions instead.</p>
+                      ) : result.analysis.summaryMedium.split('\n').map((line: string, idx: number) => {
                         if (line.startsWith('## '))
                           return (
                             <h2 key={idx} className="text-lg font-bold text-[#5c7a6b] mt-4 mb-2" style={serif}>
@@ -530,13 +427,40 @@ export default function Home() {
                           );
                         }
                         if (line.trim() === '') return <div key={idx} className="mb-1" />;
+                        if (line.match(/\d+:\d+/)) {
+                          const parts = line.split(/(\d+:\d+)/g);
+                          return (
+                            <p key={idx} className="text-[#2d2520]">
+                              {parts.map((part, i) => {
+                                if (part.match(/^\d+:\d+$/)) {
+                                  const [m, s] = part.split(':').map(Number);
+                                  const seconds = m * 60 + s;
+                                  return (
+                                    <a
+                                      key={i}
+                                      href={getYouTubeTimestampUrl(result.metadata.videoId, seconds)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-block rounded-full bg-[#fdf0eb] px-2 py-0.5 font-mono text-xs text-[#c4795a] hover:bg-[#c4795a] hover:text-white transition-colors mx-1"
+                                    >
+                                      ▶ {part}
+                                    </a>
+                                  );
+                                }
+                                return part;
+                              })}
+                            </p>
+                          );
+                        }
                         return <p key={idx} className="text-[#2d2520]">{line}</p>;
                       })}
                     </div>
                   )}
                   {activeSummaryTab === 'notes' && (
                     <div className="max-w-none leading-relaxed">
-                      {result.analysis.summaryFull.split('\n').map((line: string, idx: number) => {
+                      {!result.analysis.summaryFull ? (
+                        <p className="text-[#8a7968]">Deep notes could not be generated for this video. Try the Ask tab to ask specific questions instead.</p>
+                      ) : result.analysis.summaryFull.split('\n').map((line: string, idx: number) => {
                         if (line.startsWith('## '))
                           return (
                             <h2 key={idx} className="mb-2 mt-6 text-lg font-bold text-[#5c7a6b]" style={serif}>
@@ -562,6 +486,31 @@ export default function Home() {
                             </p>
                           );
                         if (line.trim() === '') return <div key={idx} className="mb-2" />;
+                        if (line.match(/\d+:\d+/)) {
+                          const parts = line.split(/(\d+:\d+)/g);
+                          return (
+                            <p key={idx} className="mb-2 text-[#2d2520]">
+                              {parts.map((part, i) => {
+                                if (part.match(/^\d+:\d+$/)) {
+                                  const [m, s] = part.split(':').map(Number);
+                                  const seconds = m * 60 + s;
+                                  return (
+                                    <a
+                                      key={i}
+                                      href={getYouTubeTimestampUrl(result.metadata.videoId, seconds)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-block rounded-full bg-[#fdf0eb] px-2 py-0.5 font-mono text-xs text-[#c4795a] hover:bg-[#c4795a] hover:text-white transition-colors mx-1"
+                                    >
+                                      ▶ {part}
+                                    </a>
+                                  );
+                                }
+                                return part;
+                              })}
+                            </p>
+                          );
+                        }
                         return (
                           <p key={idx} className="mb-2 text-[#2d2520]">
                             {line}
@@ -580,7 +529,7 @@ export default function Home() {
                 <div className="mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-[#8a7968]">
-                      {Object.values(cardStatus).filter(s => s === 'got-it').length} /{' '}
+                      {Object.values(cardStatus).filter(s => s === 'got-it' || s === 'got-it-question').length} /{' '}
                       {result.analysis.flashcards.filter((c: any) => c.question && c.answer).length} concepts covered
                     </span>
                     <button
@@ -598,7 +547,7 @@ export default function Home() {
 
                 {(() => {
                   const validCards = result.analysis.flashcards.filter((c: any) => c.question && c.answer);
-                  const masteredCount = Object.values(cardStatus).filter(s => s === 'got-it').length;
+                  const masteredCount = Object.values(cardStatus).filter(s => s === 'got-it' || s === 'got-it-question').length;
 
                   if (masteredCount === validCards.length && validCards.length > 0) {
                     const reviewCards = validCards.filter((_: any, i: number) => (cardStatus as any)[i] === 'review');
@@ -674,7 +623,7 @@ export default function Home() {
                         const sectionCards = sections[sectionTitle];
                         const outlineItem = result.analysis.outline.find((o: any) => o.title === sectionTitle);
                         const sectionMastered = sectionCards.filter(
-                          (c: any) => (cardStatus as any)[c.originalIndex] === 'got-it'
+                          (c: any) => (cardStatus as any)[c.originalIndex] === 'got-it' || (cardStatus as any)[c.originalIndex] === 'got-it-question'
                         ).length;
 
                         return (
@@ -700,13 +649,13 @@ export default function Home() {
                               {sectionCards.map((card: any) => {
                                 const idx = card.originalIndex;
                                 const status = (cardStatus as any)[idx];
-                                const isFlipped = status === 'flipped' || status === 'got-it' || status === 'review';
-                                const isMastered = status === 'got-it';
+                                const isFlipped = status === 'flipped' || status === 'got-it';
+                                const isMastered = status === 'got-it' || status === 'got-it-question';
 
                                 return (
                                   <div
                                     key={idx}
-                                    className={`rounded-2xl border shadow-sm transition-all ${
+                                    className={`rounded-2xl border shadow-sm transition-all cursor-pointer ${
                                       isMastered
                                         ? 'border-[#5c7a6b] bg-[#f0f7f4] opacity-70'
                                         : 'border-[#e8e0d5] bg-white'
@@ -716,16 +665,20 @@ export default function Home() {
                                     <div
                                       role="presentation"
                                       onClick={() => {
-                                        if (isMastered) return;
-                                        if (isFlipped) {
-                                          setCardStatus((prev: any) => {
-                                            const next = { ...prev };
+                                        setCardStatus((prev: any) => {
+                                          const current = prev[idx];
+                                          const next = { ...prev };
+                                          if (!current) {
+                                            next[idx] = 'flipped';
+                                          } else if (current === 'flipped') {
                                             delete next[idx];
-                                            return next;
-                                          });
-                                        } else {
-                                          setCardStatus((prev: any) => ({ ...prev, [idx]: 'flipped' }));
-                                        }
+                                          } else if (current === 'got-it') {
+                                            next[idx] = 'got-it-question';
+                                          } else if (current === 'got-it-question') {
+                                            next[idx] = 'got-it';
+                                          }
+                                          return next;
+                                        });
                                       }}
                                       className={isMastered ? '' : 'cursor-pointer'}
                                       style={{
@@ -764,7 +717,7 @@ export default function Home() {
                                             🔄 Review again
                                           </button>
                                         ) : (
-                                          <p className="mt-3 text-xs text-[#b5a898]">Click to reveal</p>
+                                          <p className="mt-3 text-xs text-[#b5a898]">Click to reveal answer</p>
                                         )}
                                       </div>
                                       <div
@@ -778,19 +731,9 @@ export default function Home() {
                                           transform: 'rotateY(180deg)',
                                         }}
                                       >
-                                        <p className="mb-2 text-xs font-medium text-[#5c7a6b]">ANSWER</p>
-                                        <p className="text-sm text-[#2d2520]">{card.answer}</p>
-                                        <a
-                                          href={getYouTubeTimestampUrl(result.metadata.videoId, card.timestamp)}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          onClick={e => e.stopPropagation()}
-                                          className="mt-3 inline-block rounded-full bg-[#fdf0eb] px-2 py-1 font-mono text-xs text-[#c4795a]"
-                                        >
-                                          ▶ {card.timestampFormatted}
-                                        </a>
-                                        {!isMastered && (
-                                          <div className="mt-3">
+                                        <div className="mb-3 flex items-center justify-between">
+                                          <p className="text-xs font-medium text-[#5c7a6b]">ANSWER</p>
+                                          {!isMastered && (
                                             <button
                                               type="button"
                                               onClick={e => {
@@ -804,12 +747,24 @@ export default function Home() {
                                                   setCardStatus((prev: any) => ({ ...prev, [idx]: 'got-it' }));
                                                 }, 10);
                                               }}
-                                              className="rounded-full bg-[#5c7a6b] px-3 py-0.5 text-xs font-medium text-white transition-colors hover:bg-[#4a6b5a] inline-block"
+                                              className="rounded-full bg-[#5c7a6b] px-3 py-0.5 text-xs font-medium text-white transition-colors hover:bg-[#4a6b5a]"
                                             >
                                               ✅ Got it
                                             </button>
-                                          </div>
-                                        )}
+                                          )}
+                                        </div>
+                                        <p className="text-sm text-[#2d2520]">{card.answer}</p>
+                                        <div className="mt-3 flex items-center gap-2 flex-wrap">
+                                          <a
+                                            href={getYouTubeTimestampUrl(result.metadata.videoId, card.timestamp)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={e => e.stopPropagation()}
+                                            className="inline-block rounded-full bg-[#fdf0eb] px-2 py-1 font-mono text-xs text-[#c4795a]"
+                                          >
+                                            ▶ {card.timestampFormatted}
+                                          </a>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
@@ -881,29 +836,6 @@ export default function Home() {
                         </a>
                       )}
                     </div>
-                    {((searchResults as any).sources || []).length > 1 && (
-                      <div>
-                        <p className="mb-2 text-xs font-medium text-[#b5a898]">OTHER RELEVANT MOMENTS</p>
-                        <div className="space-y-2">
-                          {((searchResults as any).sources || []).slice(1).map((r: any, i: number) => (
-                            <div
-                              key={i}
-                              className="flex justify-between gap-4 rounded-xl border border-[#e8e0d5] bg-[#faf7f2] p-4"
-                            >
-                              <p className="line-clamp-2 flex-1 text-sm text-[#8a7968]">{r.text}</p>
-                              <a
-                                href={getYouTubeTimestampUrl(result.metadata.videoId, r.timestamp)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="shrink-0 rounded-lg bg-[#fdf0eb] px-2 py-1 font-mono text-xs text-[#c4795a]"
-                              >
-                                ▶ {r.timestampFormatted}
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
