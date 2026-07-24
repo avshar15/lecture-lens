@@ -1,5 +1,3 @@
-import { YoutubeTranscript } from 'youtube-transcript';
-
 export interface TranscriptChunk {
   text: string;
   timestamp: number;
@@ -40,9 +38,31 @@ export async function runIngestionAgent(url: string): Promise<{
     throw new Error('Invalid YouTube URL. Please check the link and try again.');
   }
 
-  let rawTranscript;
+  const apiKey = process.env.SUPADATA_API_KEY;
+  if (!apiKey) {
+    throw new Error('Transcript service not configured.');
+  }
+
+  let rawTranscript: Array<{ text: string; offset: number; duration: number }> = [];
+
   try {
-    rawTranscript = await YoutubeTranscript.fetchTranscript(videoId);
+    const response = await fetch(
+      `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&lang=en`,
+      {
+        headers: { 'x-api-key': apiKey },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Transcript fetch failed');
+    }
+
+    const data = await response.json();
+    rawTranscript = (data.content || []).map((item: any) => ({
+      text: item.text,
+      offset: item.offset ?? item.start ?? 0,
+      duration: item.duration ?? 0,
+    }));
   } catch {
     throw new Error('Could not fetch transcript. The video may be private, have no captions, or be a livestream.');
   }
