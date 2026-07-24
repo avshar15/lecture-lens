@@ -144,53 +144,55 @@ ${transcriptWithTimestamps}`,
     console.error('Last 500 chars:', structureText.slice(-500));
   }
 
-  // Generate three summaries
-  const summaryResponse = await client.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 6000,
-    messages: [
-      {
-        role: 'user',
-        content: `You are an expert study assistant. Based on this lecture transcript, generate three summaries in JSON format.
+  // Generate summaries with three separate calls for reliability
+  async function generateSummary(instruction: string, maxTokens: number): Promise<string> {
+    try {
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-5',
+        max_tokens: maxTokens,
+        messages: [
+          {
+            role: 'user',
+            content: `You are an expert study assistant analyzing a lecture transcript.
 
 This lecture is ${videoDurationMinutes} minutes long.
 
-Return this exact JSON structure:
-{
-  "summaryShort": "Maximum 200 words of pure prose in one paragraph. No headers, no bullets, no instruction text. Answer only what this lecture was about and why it matters. Be ruthlessly brief.",
-  "summaryMedium": "Approximately ${studyGuideWords} words. Do not include any instruction text or format descriptions. Use short paragraphs with bold headers for each major topic. Cover every concept from the lecture. Never use em dashes. End with a line in exactly this format: MOST IMPORTANT MOMENT: [timestamp in M:SS] - [one sentence]. The timestamp must be where the single most important concept is first clearly explained.",
-  "summaryFull": "Approximately ${deepNotesWords} words of comprehensive study notes. Do not include any instruction text or headers describing the format. Start directly with '## The Big Picture' followed by one paragraph about what the whole lecture was about. Then '## Key Concepts' with one subsection per major topic using bold headers and detailed explanations with specific examples the instructor used. Then '## The Most Important Moment' with a timestamp in M:SS format followed by a hyphen and one sentence explaining why. Then '## Exam Must-Knows' with 5-7 bullet points of the highest-yield facts. Never use em dashes, use a simple hyphen instead."
-}
+${instruction}
 
-Return ONLY the JSON, no other text.
+Return only the requested text. Do not wrap it in JSON. Do not add any preamble, commentary, or format descriptions. Never use em dashes, use a simple hyphen instead.
 
 Transcript:
 ${sampledTranscript}`,
-      },
-    ],
-  });
-
-  const summaryText = summaryResponse.content[0].type === 'text'
-    ? summaryResponse.content[0].text
-    : '';
-
-  let summaries = {
-    summaryShort: '',
-    summaryMedium: '',
-    summaryFull: '',
-  };
-  try {
-    let cleaned = summaryText.trim();
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+          },
+        ],
+      });
+      return response.content[0].type === 'text' ? response.content[0].text.trim() : '';
+    } catch (e) {
+      console.error('Summary generation failed:', e);
+      return '';
     }
-    summaries = JSON.parse(cleaned);
-  } catch (e) {
-    console.error('Failed to parse summary JSON. Raw response length:', summaryText.length);
-    console.error('Last 500 chars:', summaryText.slice(-500));
   }
+
+  const [summaryShort, summaryMedium, summaryFull] = await Promise.all([
+    generateSummary(
+      `Write a maximum 200 word summary in pure prose, one paragraph. No headers, no bullets. Answer only what this lecture was about and why it matters. Be ruthlessly brief.`,
+      1000
+    ),
+    generateSummary(
+      `Write approximately ${studyGuideWords} words of study guide content. Use short paragraphs with bold markdown headers for each major topic. Cover every concept from the lecture. End with a final line in exactly this format: MOST IMPORTANT MOMENT: [timestamp in M:SS] - [one sentence]. The timestamp must be where the single most important concept is first clearly explained.`,
+      3000
+    ),
+    generateSummary(
+      `Write approximately ${deepNotesWords} words of comprehensive study notes. Structure exactly as follows. Start with "## The Big Picture" then one paragraph about the whole lecture. Then "## Key Concepts" with one subsection per major topic using bold markdown headers and detailed explanations with specific examples the instructor used. Then "## The Most Important Moment" with a timestamp in M:SS format followed by a hyphen and one sentence explaining why. Then "## Exam Must-Knows" with 5 to 7 bullet points of the highest-yield facts.`,
+      6000
+    ),
+  ]);
+
+  const summaries = {
+    summaryShort,
+    summaryMedium,
+    summaryFull,
+  };
 
   return {
     outline: structure.outline || [],
