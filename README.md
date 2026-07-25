@@ -5,7 +5,11 @@
 🔗 **Live demo:** https://lecture-lens-sand.vercel.app
 
 
-🎥 **Video walkthrough:** https://www.loom.com/share/6392d3f02fe54d54b5790080f483e8d2
+🎥 **Video walkthrough:**
+
+https://www.loom.com/share/6392d3f02fe54d54b5790080f483e8d2
+
+
 
 ![LectureLens landing page](screenshots/landing.png)
 
