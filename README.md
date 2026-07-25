@@ -2,11 +2,13 @@
 
 **Turn any YouTube lecture into a complete study environment: outline, layered summaries, flashcards, and grounded semantic search, all traceable back to the exact moment in the video.**
 
-🔗 **Live demo:** https://lecture-lens-sand.vercel.app
-🎥 **Video walkthrough:** https://www.loom.com/share/6392d3f02fe54d54b5790080f483e8d2
+🔗 **Live demo:**
+https://lecture-lens-sand.vercel.app
 
-**Landing: paste any YouTube lecture URL to get started**
-![Landing](screenshots/landing.png)
+
+🎥 **Video walkthrough:** 
+https://www.loom.com/share/6392d3f02fe54d54b5790080f483e8d2
+
 
 ---
 
@@ -29,6 +31,9 @@ LectureLens closes that gap. It turns any lecture into an active study environme
 ---
 
 ## Screenshots
+
+**Landing: paste any YouTube lecture URL to get started**
+![Landing](screenshots/landing.png)
 
 **Outline: full-coverage, topic-driven, every section links into the video**
 ![Outline](screenshots/outline.png)
