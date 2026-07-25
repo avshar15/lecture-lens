@@ -10,9 +10,6 @@
 https://www.loom.com/share/6392d3f02fe54d54b5790080f483e8d2
 
 
-
-![LectureLens landing page](screenshots/landing.png)
-
 ---
 
 ## The Problem
@@ -34,6 +31,8 @@ LectureLens closes that gap. It turns any lecture into an active study environme
 ---
 
 ## Screenshots
+
+![LectureLens landing page](screenshots/landing.png)
 
 **Outline: full-coverage, topic-driven, every section links into the video**
 ![Outline](screenshots/outline.png)
