@@ -2,16 +2,12 @@
 
 **Turn any YouTube lecture into a complete study environment: outline, layered summaries, flashcards, and grounded semantic search, all traceable back to the exact moment in the video.**
 
-🔗 **Live demo:**
-
-https://lecture-lens-sand.vercel.app
+🔗 **Live demo:** https://lecture-lens-sand.vercel.app
 
 
 
 🎥 **Video walkthrough:** 
-
 https://www.loom.com/share/6392d3f02fe54d54b5790080f483e8d2
-
 
 ---
 
