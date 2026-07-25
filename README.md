@@ -5,7 +5,8 @@
 🔗 **Live demo:** https://lecture-lens-sand.vercel.app
 🎥 **Video walkthrough:** https://www.loom.com/share/6392d3f02fe54d54b5790080f483e8d2
 
-![LectureLens landing page](screenshots/landing.png)
+**Landing: paste any YouTube lecture URL to get started**
+![Landing](screenshots/landing.png)
 
 ---
 
@@ -111,30 +112,15 @@ The hardest part of this build was not the AI. It was reliability.
 
 ## Running Locally
 
-\`\`\`bash
-# 1. Clone the repo
+```bash
 git clone https://github.com/avshar15/lecture-lens.git
 cd lecture-lens
-
-# 2. Install dependencies
 npm install
+cp .env.example .env.local   # add your API keys
+npm run dev                  # runs on localhost:3000
+```
 
-# 3. Add your API keys
-cp .env.example .env.local
-# then edit .env.local with your keys
-
-# 4. Run
-npm run dev
-# open http://localhost:3000
-\`\`\`
-
-### Environment Variables
-
-\`\`\`
-ANTHROPIC_API_KEY=your_anthropic_key
-OPENAI_API_KEY=your_openai_key
-SUPADATA_API_KEY=your_supadata_key
-\`\`\`
+Requires API keys for Anthropic, OpenAI, and Supadata (see `.env.example`).
 
 ---
 
